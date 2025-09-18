@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  dashboard:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./app:/app/app
+      - ./pipeline:/app/pipeline
+      - ./data:/app/data

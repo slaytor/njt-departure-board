@@ -1,7 +1,8 @@
-# requirements.txt
-requests
-polars
-pydantic
-python-dotenv
-pyarrow
 duckdb
+polars
+pyarrow
+pydantic
+pydantic-settings
+python-dotenv
+requests
+streamlit
