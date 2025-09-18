@@ -1,0 +1,16 @@
+# .gitignore
+
+# Environment
+.env
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Data files (we don't want to commit the output parquet file)
+data/
+
+# IDE files
+.vscode/
+.idea/

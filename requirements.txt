@@ -1,0 +1,7 @@
+# requirements.txt
+requests
+polars
+pydantic
+python-dotenv
+pyarrow
+duckdb
