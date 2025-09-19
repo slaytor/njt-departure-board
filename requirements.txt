@@ -1,3 +1,4 @@
+connectorx
 duckdb
 polars
 psycopg2-binary
