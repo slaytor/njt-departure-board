@@ -27,6 +27,14 @@ def load_data():
         query = f"SELECT * FROM {TABLE_NAME}"
         df = pl.read_database_uri(query=query, uri=DB_URL)
 
+        # --- START DEBUGGING ---
+        st.write("--- Inside load_data() ---")
+        st.write(f"Successfully connected and ran query. Found {len(df)} rows.")
+        st.write("First 3 rows of data from DB:")
+        st.write(df.head(3))
+        st.write("--------------------------")
+        # --- END DEBUGGING ---
+
         # Get the latest update time from the data itself
         last_updated = df["departure_datetime"].max()
         return df, last_updated
