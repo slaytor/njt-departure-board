@@ -1,28 +1,36 @@
+# app/dashboard.py
 import streamlit as st
 import duckdb
+import polars as pl
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
-# ... (page config is the same) ...
 
+# --- Page Configuration ---
+st.set_page_config(
+    page_title="PABT Departures",
+    page_icon="🚌",
+    layout="wide"
+)
+
+
+# --- Data Loading ---
 DATA_FILE = "data/departures.parquet"
 
 
+@st.cache_data(ttl=60)
 def load_data():
     """Loads departure data from the Parquet file."""
     if not os.path.exists(DATA_FILE):
-        st.warning("Data file not found. Please run the pipeline first.")
-        return None, None # Return None for the dataframe
+        return None, None
 
     try:
         con = duckdb.connect()
-        # --- CHANGE THIS LINE ---
-        # from: df = con.execute(f"SELECT * FROM '{DATA_FILE}'").fetchdf()
-        # to:
+        # Read directly from the Parquet file
         df = con.execute(f"SELECT * FROM '{DATA_FILE}'").pl()
-        # --- END CHANGE ---
         con.close()
-
+        
         last_updated_ts = os.path.getmtime(DATA_FILE)
         last_updated_dt = datetime.fromtimestamp(last_updated_ts)
         return df, last_updated_dt
@@ -32,16 +40,59 @@ def load_data():
 
 
 # --- Main Application ---
-# ... (rest of the file is the same) ...
 st.title("🚌 Port Authority Bus Terminal Departures")
 
+
+# --- UI Controls ---
+col1, col2, col3 = st.columns([1, 2, 3])
+
+with col1:
+    time_window = st.number_input(
+        "Show departures in the next (minutes):",
+        min_value=5,
+        max_value=180,
+        value=15,
+        step=5
+    )
+
+
+# --- Load Data ---
 departures_df, last_updated = load_data()
 
-if last_updated:
-    st.caption(f"Last Updated: {last_updated.strftime('%Y-%m-%d %I:%M:%S %p')}")
 
-# Check if the dataframe is not None and not empty
+# --- Data Processing and Display ---
 if departures_df is not None and not departures_df.is_empty():
-    st.dataframe(departures_df, use_container_width=True, hide_index=True)
+    eastern_tz = ZoneInfo("America/New_York")
+    now = datetime.now(eastern_tz)
+    end_time = now + timedelta(minutes=time_window)
+
+    # Convert, filter, and sort data
+    sorted_df = (
+        departures_df
+        .with_columns(pl.col("departure_datetime").dt.convert_time_zone("America/New_York"))
+        .filter(pl.col("departure_datetime").is_between(now, end_time))
+        .sort("departure_datetime")
+    )
+
+    # Display the count of filtered rows
+    col1.metric("Current Departures", len(sorted_df))
+    if last_updated:
+        st.caption(f"Last Updated: {last_updated.strftime('%Y-%m-%d %I:%M:%S %p')}")
+
+    # Reorder the columns for display
+    display_df = sorted_df.select(
+        "Departs",
+        "Route",
+        "Destination",
+        "Gate"
+    )
+
+    # Extend the display box
+    st.dataframe(
+        display_df,
+        use_container_width=True,
+        hide_index=True,
+        height=800
+    )
 else:
     st.info("No departure data available.")
