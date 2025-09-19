@@ -1,14 +1,12 @@
-import os
 import polars as pl
 import psycopg2
 import psycopg2.extras
 
 
-DB_URL = os.getenv("DATABASE_URL")
 TABLE_NAME = "departures"
 
 
-def save_to_postgres(df: pl.DataFrame):
+def save_to_postgres(df: pl.DataFrame, settings):
     """
     Connects to Postgres and performs an idempotent bulk insert.
     """
@@ -16,8 +14,9 @@ def save_to_postgres(df: pl.DataFrame):
         print("DataFrame is empty. Nothing to save.")
         return
 
-    if not DB_URL:
-        raise ValueError("DATABASE_URL environment variable is not set.")
+    db_url = settings.database_url
+    if not db_url:
+        raise ValueError("Database URL not found in settings.")
 
     # Get column names and convert dataframe to a list of tuples
     cols = df.columns
@@ -35,9 +34,8 @@ def save_to_postgres(df: pl.DataFrame):
 
     conn = None
     try:
-        conn = psycopg2.connect(DB_URL)
+        conn = psycopg2.connect(db_url)
         with conn.cursor() as cursor:
-            # Use execute_values for an efficient bulk insert
             psycopg2.extras.execute_values(
                 cursor, insert_query, data_to_insert
             )

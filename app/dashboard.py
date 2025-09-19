@@ -1,11 +1,9 @@
-# app/dashboard.py
 import streamlit as st
-import duckdb
 import polars as pl
-import os
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-
+import os
+from streamlit.errors import StreamlitAPIException
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -16,9 +14,11 @@ st.set_page_config(
 
 
 # --- Data Loading ---
+# This logic checks for the Streamlit cloud secret first,
+# then falls back to the local .env variable for local development.
 try:
     DB_URL = st.secrets["DATABASE_URL"]
-except KeyError:
+except (StreamlitAPIException, KeyError):
     DB_URL = os.getenv("DATABASE_URL")
 
 TABLE_NAME = "departures"
