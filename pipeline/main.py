@@ -1,7 +1,7 @@
 from .auth import get_token
 from .extract import fetch_pabt_departures
 from .transform import transform_departures
-from .load import save_to_parquet
+from .load import save_to_postgres
 
 
 def run_pipeline():
@@ -19,7 +19,7 @@ def run_pipeline():
         clean_df = transform_departures(raw_data)
 
         # 4. Load data to Parquet file
-        save_to_parquet(clean_df)
+        save_to_postgres(clean_df)
 
     print("Pipeline run finished.")
 

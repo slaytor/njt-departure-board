@@ -16,24 +16,20 @@ st.set_page_config(
 
 
 # --- Data Loading ---
-DATA_FILE = "data/departures.parquet"
+DB_URL = st.secrets["DATABASE_URL"] # Streamlit handles secrets this way
+TABLE_NAME = "departures"
 
 
 @st.cache_data(ttl=60)
 def load_data():
-    """Loads departure data from the Parquet file."""
-    if not os.path.exists(DATA_FILE):
-        return None, None
-
     try:
-        con = duckdb.connect()
-        # Read directly from the Parquet file
-        df = con.execute(f"SELECT * FROM '{DATA_FILE}'").pl()
-        con.close()
-        
-        last_updated_ts = os.path.getmtime(DATA_FILE)
-        last_updated_dt = datetime.fromtimestamp(last_updated_ts)
-        return df, last_updated_dt
+        # Polars can read directly from a SQL query
+        query = f"SELECT * FROM {TABLE_NAME}"
+        df = pl.read_database_uri(query=query, uri=DB_URL)
+
+        # Get the latest update time from the data itself
+        last_updated = df["departure_datetime"].max()
+        return df, last_updated
     except Exception as e:
         st.error(f"Error loading data: {e}")
         return None, None
