@@ -16,18 +16,23 @@ st.set_page_config(
 
 
 # --- Data Loading ---
-DB_URL = st.secrets["DATABASE_URL"] # Streamlit handles secrets this way
+try:
+    DB_URL = st.secrets["DATABASE_URL"]
+except KeyError:
+    DB_URL = os.getenv("DATABASE_URL")
+
 TABLE_NAME = "departures"
 
 
 @st.cache_data(ttl=60)
 def load_data():
     try:
-        # Polars can read directly from a SQL query
         query = f"SELECT * FROM {TABLE_NAME}"
         df = pl.read_database_uri(query=query, uri=DB_URL)
 
-        # Get the latest update time from the data itself
+        if df.is_empty():
+            return df, None
+
         last_updated = df["departure_datetime"].max()
         return df, last_updated
     except Exception as e:
