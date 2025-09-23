@@ -10,10 +10,6 @@ You can view the live dashboard here:
 
 **[https://njt-departure-board.streamlit.app/](https://your-streamlit-app-url.streamlit.app/)**
 
-### Screenshot
-![](../../Desktop/Screenshot 2025-09-22 at 11.04.09 PM.png)
-
-
 ---
 
 ## Tech Stack & Architecture
