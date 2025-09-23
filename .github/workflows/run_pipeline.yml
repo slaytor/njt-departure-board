@@ -2,8 +2,8 @@ name: Fetch NJ Transit Data
 
 on:
   schedule:
-    # Runs every hour
-    - cron: '0 * * * *'
+    # Runs every half hour
+    - cron: '*/30 * * * *'
   workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
 
 jobs:
