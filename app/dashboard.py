@@ -9,7 +9,6 @@ from streamlit.errors import StreamlitAPIException
 st.set_page_config(
     page_title="PABT Departures",
     page_icon="🚌",
-    layout="wide"
 )
 
 
@@ -84,26 +83,19 @@ if departures_df is not None and not departures_df.is_empty():
     if not filtered_df.is_empty():
         summary_df = (
             filtered_df
-            # Create the 'Route Variation' column from the 'Destination'
-            .with_columns(
-                pl.col("Destination").str.split(" ").list.first().alias("Route Variation")
-            )
-            # Group by the new column
-            .group_by("Route Variation")
-            # Aggregate the departures and gates into comma-separated lists
+            .group_by("Route Variation", "route_name")
             .agg(
                 pl.col("Departs").str.join(", "),
                 pl.col("Gate").str.join(", ")
             )
-            # Give the new columns clean names
             .rename({"Departs": "Next Departures", "Gate": "Gates"})
+            .sort("Next Departures")
         )
 
-        # Place the second metric in the third column
         col3.metric("Displayed Rows", len(summary_df))
 
         st.dataframe(
-            summary_df,
+            summary_df.select("Route Variation", pl.col("route_name").alias("Route Name"), "Next Departures", "Gates"),
             use_container_width=True,
             hide_index=True,
             height=800

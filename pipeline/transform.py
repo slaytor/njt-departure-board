@@ -50,11 +50,13 @@ def transform_departures(data: dict):
 
     # We can now use our clean Pydantic field names
     df = df.select(
-        pl.col("departs").alias("Departs"),
         pl.col("route").alias("Route"),
         pl.col("destination").alias("Destination"),
+        pl.col("departs").alias("Departs"),
         pl.col("gate").alias("Gate"),
-        pl.col("departure_datetime")
+        pl.col("departure_datetime"),
+        pl.col("destination").str.split(" ").list.first().alias("Route Variation"),
+        pl.col("destination").str.split(" ").list.slice(1).list.join(" ").alias("route_name")
     )
 
     return df
