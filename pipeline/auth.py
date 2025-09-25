@@ -14,14 +14,12 @@ def get_token():
         )
         response.raise_for_status()
 
-        # --- FIX: Parse the JSON response ---
         response_data = response.json()
         new_token = response_data.get("UserToken")
 
         if not new_token:
             print("Authentication successful but no UserToken found in response.")
             return None
-        # --- END FIX ---
 
         print("Successfully authenticated and received new token.")
         return new_token
