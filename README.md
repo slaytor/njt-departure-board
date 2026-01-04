@@ -7,7 +7,6 @@ This project fetches real-time bus departure data from the NJ Transit API, proce
 ## Live Demo
 
 You can view the live dashboard here:
-
 **[https://njt-departure-board.streamlit.app/](https://njt-departure-board.streamlit.app/)**
 
 ---

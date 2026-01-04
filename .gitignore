@@ -14,3 +14,7 @@ data/
 # IDE files
 .vscode/
 .idea/
+
+# --- Operating System Files ---
+# macOS
+.DS_Store
