@@ -111,7 +111,7 @@ if departures_df is not None and not departures_df.is_empty():
 
         st.dataframe(
             summary_df.select("Route Variation", pl.col("route_name").alias("Route Name"), "Next Departures", "Gates"),
-            use_container_width=True,
+            width='stretch',
             hide_index=True,
             height=800
         )

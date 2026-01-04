@@ -10,12 +10,17 @@ def fetch_pabt_departures(token: str):
         return None
 
     try:
+        # The API seems to limit the response to ~60 minutes regardless of the 'time' parameter.
+        # We request 90 minutes just in case, but rely on the database accumulation for history.
         response = requests.post(
             DEPARTURE_URL,
-            data={"token": token, "stop": "PABT"}
+            data={
+                "token": token,
+                "stop": "PABT",
+                "time": 90
+            }
         )
         response.raise_for_status()
-        print(response.json())
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"Error fetching departure data: {e}")
