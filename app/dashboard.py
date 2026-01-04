@@ -67,9 +67,12 @@ if departures_df is not None and not departures_df.is_empty():
     now = datetime.now(eastern_tz)
     end_time = now + timedelta(minutes=time_window)
 
+    df_with_tz = departures_df.with_columns(
+        pl.col("departure_datetime").dt.convert_time_zone("America/New_York")
+    )
+
     filtered_df = (
-        departures_df
-        .with_columns(pl.col("departure_datetime").dt.convert_time_zone("America/New_York"))
+        df_with_tz
         .filter(pl.col("departure_datetime").is_between(now, end_time))
         .sort("departure_datetime")
     )
@@ -81,9 +84,21 @@ if departures_df is not None and not departures_df.is_empty():
         st.caption(f"Last Updated: {last_updated.strftime('%Y-%m-%d %I:%M:%S %p')}")
 
     if not filtered_df.is_empty():
+        shown_routes = filtered_df.select("Route Variation", "route_name").unique()
+
+        expanded_df = (
+            df_with_tz
+            .filter(pl.col("departure_datetime") >= now)
+            .join(shown_routes, on=["Route Variation", "route_name"], how="inner")
+            .sort("departure_datetime")
+            .group_by("Route Variation", "route_name", maintain_order=True)
+            .head(3)
+        )
+
         summary_df = (
-            filtered_df
-            .group_by("Route Variation", "route_name")
+            expanded_df
+            .sort("departure_datetime")
+            .group_by("Route Variation", "route_name", maintain_order=True)
             .agg(
                 pl.col("Departs").str.join(", "),
                 pl.col("Gate").str.join(", ")
