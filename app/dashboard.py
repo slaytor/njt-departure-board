@@ -3,13 +3,44 @@ import polars as pl
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import os
+import sys
 from streamlit.errors import StreamlitAPIException
+
+# --- Path Setup for Pipeline Import ---
+# Add the parent directory to sys.path so we can import the pipeline module
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 # --- Page Configuration ---
 st.set_page_config(
     page_title="PABT Departures",
     page_icon="🚌",
+    layout="wide"  # Use the full screen width
 )
+
+# --- Environment Setup ---
+# Inject Streamlit secrets into environment variables so the pipeline config can read them.
+# This is necessary because pydantic BaseSettings reads from os.environ.
+try:
+    # We iterate through secrets and set them as env vars if they match our expected keys
+    # This covers NJT_USERNAME, NJT_PASSWORD, DATABASE_URL
+    for key, value in st.secrets.items():
+        if isinstance(value, str):
+            os.environ[key] = value
+except (FileNotFoundError, AttributeError):
+    # Local development with .env file or no secrets.toml
+    pass
+
+# --- Pipeline Imports ---
+# Import these AFTER setting os.environ so settings are initialized correctly
+try:
+    from pipeline.auth import get_token
+    from pipeline.extract import fetch_pabt_departures
+    from pipeline.transform import transform_departures
+    from pipeline.load import save_to_postgres
+    from pipeline.config import settings
+except ImportError as e:
+    st.error(f"Failed to import pipeline modules: {e}")
+    st.stop()
 
 
 # --- Data Loading ---
@@ -23,8 +54,29 @@ except (StreamlitAPIException, KeyError):
 TABLE_NAME = "departures"
 
 
-@st.cache_data(ttl=60)
-def load_data():
+def run_pipeline_sync():
+    """Runs the data pipeline synchronously to fetch fresh data."""
+    try:
+        # st.toast("Fetching latest data from NJ Transit...", icon="🔄")
+        token = get_token()
+        if not token:
+            st.warning("Could not authenticate with NJ Transit.")
+            return
+
+        raw_data = fetch_pabt_departures(token)
+        if raw_data:
+            clean_df = transform_departures(raw_data)
+            if not clean_df.is_empty():
+                save_to_postgres(clean_df, settings)
+                # st.toast("Data updated successfully!", icon="✅")
+            else:
+                st.warning("No valid departures found in API response.")
+    except Exception as e:
+        st.error(f"Pipeline error: {e}")
+
+
+def load_data_from_db():
+    """Queries the database for the latest departure data."""
     try:
         query = f"SELECT * FROM {TABLE_NAME}"
         df = pl.read_database_uri(query=query, uri=DB_URL)
@@ -58,7 +110,17 @@ with col1:
 
 
 # --- Load Data ---
-departures_df, last_updated = load_data()
+# Logic: Run pipeline and load DB once per session (page load).
+# Store result in session_state to avoid DB hits on UI interaction.
+if "departures_df" not in st.session_state:
+    with st.spinner('Refreshing departure data...'):
+        run_pipeline_sync()
+        df, last_upd = load_data_from_db()
+        st.session_state["departures_df"] = df
+        st.session_state["last_updated"] = last_upd
+
+departures_df = st.session_state.get("departures_df")
+last_updated = st.session_state.get("last_updated")
 
 
 # --- Data Processing and Display ---
@@ -109,11 +171,21 @@ if departures_df is not None and not departures_df.is_empty():
 
         col3.metric("Displayed Rows", len(summary_df))
 
+        # Calculate dynamic height based on number of rows
+        # 35px is roughly the height of a row + header/padding adjustments
+        # We set a max height to prevent it from being infinitely tall if there are 1000 rows
+        row_height = 35
+        header_height = 40
+        calculated_height = (len(summary_df) * row_height) + header_height
+        # Clamp the height between a minimum and a maximum
+        final_height = max(min(calculated_height, 1200), 200)
+
         st.dataframe(
             summary_df.select("Route Variation", pl.col("route_name").alias("Route Name"), "Next Departures", "Gates"),
-            width='stretch',
+            width=None, # Let Streamlit handle width or use 'use_container_width'
+            use_container_width=True,
             hide_index=True,
-            height=800
+            height=final_height
         )
     else:
         # This handles the case where the filter results in no data
