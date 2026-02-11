@@ -177,8 +177,10 @@ if departures_df is not None and not departures_df.is_empty():
         row_height = 35
         header_height = 40
         calculated_height = (len(summary_df) * row_height) + header_height
-        # Clamp the height between a minimum and a maximum
-        final_height = max(min(calculated_height, 1200), 200)
+        
+        # Increase the max height significantly to avoid internal scrolling
+        # 5000px should be enough for ~140 rows, which is plenty for a departure board
+        final_height = max(min(calculated_height, 5000), 200)
 
         st.dataframe(
             summary_df.select("Route Variation", pl.col("route_name").alias("Route Name"), "Next Departures", "Gates"),
