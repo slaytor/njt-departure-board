@@ -19,7 +19,6 @@ This project uses a modern, cloud-native data stack to create a robust and autom
 
 | Component | Technology |
 | :--- | :--- |
-| **Orchestration** | GitHub Actions |
 | **Data Ingestion** | Python (`requests`) |
 | **Transformation** | Python (`polars`, `pydantic`) |
 | **Database** | Postgres (Neon - Serverless) |
@@ -30,12 +29,12 @@ This project uses a modern, cloud-native data stack to create a robust and autom
 
 The data flows through the system as follows:
 
-1.  **Scheduled Trigger**: A **GitHub Actions** workflow runs on an hourly cron schedule.
+1.  **User Trigger**: When a user visits or refreshes the dashboard, the application triggers the data pipeline.
 2.  **ETL Pipeline**: 
     * **Extract**: Fetches real-time departure data from the NJ Transit API.
     * **Transform**: Validates the data with Pydantic and transforms it into a clean, structured format using Polars.
     * **Load**: Connects to a remote **Postgres** database hosted on Neon and performs an idempotent insert, only adding new, unique departure records.
-3.  **Dashboard**: The **Streamlit** application, hosted on Streamlit Community Cloud, queries the Postgres database to fetch and display the latest departure data.
+3.  **Dashboard**: The **Streamlit** application queries the Postgres database to fetch and display the latest departure data, showing upcoming departures for each route.
 
 ---
 
@@ -66,27 +65,11 @@ To run this project on your local machine, please follow these steps.
     DATABASE_URL="your_neon_postgres_connection_string"
     ```
 
-3.  **Set up the Python environment:**
-    ```bash
-    # Create and activate a virtual environment
-    python3 -m venv venv
-    source venv/bin/activate
-
-    # Install dependencies
-    pip install -r requirements.txt
-    ```
-
-4.  **Run the pipeline to populate your database:**
-    This script will connect to your database and load it with the initial data.
-    ```bash
-    python -m pipeline.main
-    ```
-
-5.  **Launch the dashboard:**
+3.  **Launch the dashboard:**
     This command will build the Docker image and start the Streamlit application.
     ```bash
     docker-compose up
     ```
 
-6.  **View the dashboard:**
+4.  **View the dashboard:**
     Open your web browser and navigate to **http://localhost:8501**.

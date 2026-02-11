@@ -10,7 +10,16 @@ from .config import settings
 
 
 def run_pipeline():
-    """Executes the full data pipeline."""
+    """
+    Executes the full data pipeline manually.
+    
+    This function is useful for:
+    1. Local testing of the ETL logic.
+    2. Manually backfilling data if needed.
+    
+    Note: The production Streamlit app imports the individual steps directly
+    and runs them on page load, so this script is not used in the live app.
+    """
     print("Starting the NJ Transit data pipeline...")
 
     token = get_token()
